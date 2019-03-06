@@ -12,6 +12,7 @@ import pickle
 import numpy as np
 import sonnet as snt
 import tensorflow as tf
+import tensorflow_hub as hub
 import scipy
 import sklearn
 
@@ -162,6 +163,8 @@ elif args.dataset == 'mnist' or args.dataset == 'fmnist':
     ])
     output_distribution_fn = vae.BERNOULLI_FN
 elif args.dataset == 'celeba':
+    pretrained_net = hub.Module("https://tfhub.dev/google/imagenet/inception_resnet_v2/classification/1")
+
     encoder_module = snt.Sequential([
         snt.Conv2D(16, 3),
         snt.Residual(snt.Conv2D(16, 3)),
@@ -242,7 +245,8 @@ model = cpvae.CPVAE(
     beta=args.beta,
     gamma=args.gamma,
     delta=args.delta,
-    output_dist_fn=output_distribution_fn)
+    output_dist_fn=output_distribution_fn,
+    pretrained_net=pretrained_net)
 
 # build model
 data_ph = tf.placeholder(

@@ -51,7 +51,8 @@ class CPVAE(snt.AbstractModule):
                  gamma,
                  delta,
                  output_dist_fn=vae.BERNOULLI_FN,
-                 name='vae'):
+                 name='vae',
+                 pretrained_net=None):
         """
         Args:
             latent_dimension (int): Dimension of the latent variable.
@@ -69,6 +70,7 @@ class CPVAE(snt.AbstractModule):
         self._decision_tree = decision_tree
         self._encoder = encoder_net
         self._decoder = decoder_net
+        self._pretrained_net = pretrained_net
         self._output_dist_fn = output_dist_fn
         self.beta = beta
         self.gamma = gamma
@@ -112,7 +114,11 @@ class CPVAE(snt.AbstractModule):
             Tensor: result of encoding, sampling, and decoding inputs in [0,1]
         """
         x = data
+        pretrained_repr = self._pretrained_net(tf.image.resize_images(x, (299, 299)), signature="image_feature_vector")
+        pretrained_repr = tf.layers.dense(pretrained_repr, 100, activation=tf.nn.relu)
         encoder_repr = self._encoder(x)
+        encoder_repr = tf.concat([encoder_repr, pretrained_repr], 1)
+
         loc = self._loc(encoder_repr)
         self.z_mu = loc
         scale = self._scale(encoder_repr)
