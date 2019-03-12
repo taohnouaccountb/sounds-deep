@@ -92,14 +92,17 @@ def load_cifar10(data_dir):
 #     # train_idxs, val_idxs, test_idxs, attribute_names, attributes
 #     return idxable, idxable.train_idxs, idxable.test_idxs, idxable.attributes
 
-def load_celeba(data_dir):
+def load_celeba(data_dir, restricted_degree=0, print_ratio=False):
     """Returns CelebA as (train_data, train_labels, test_data, test_labels)
 
         Shapes are (162770, 64, 64, 3), (162770, 2), (19962, 64, 64, 3), (19962, 10)
         Data is in [0,1] and labels are one-hot
+
+        Arg:
+          restricted_degree: only keep the instances with at least d selected attributes
     """
-    train_data = np.load(os.path.join(data_dir, 'celeba_train_imgs.npy')) / 255.0
-    test_data = np.load(os.path.join(data_dir, 'celeba_test_imgs.npy')) / 255.0
+    train_data = np.load(os.path.join(data_dir, 'celeba_train_imgs.npy')).astype('float32') / 255.0
+    test_data = np.load(os.path.join(data_dir, 'celeba_test_imgs.npy')).astype('float32') / 255.0
 
     info_pak = np.load(os.path.join(data_dir, 'celeba_attr.npz'))
     train_idxs = info_pak['train_idxs']
@@ -110,15 +113,15 @@ def load_celeba(data_dir):
     male_attr_idx = 20
 
     def get_label(data, idxs):
-        def jj(attr):
+        def count_indicators(attr):
             important_attributes_idx = [0, 1, 4, 9, 16, 18, 22, 24, 29, 30, 34, 36, 37, 38]
-            x = np.array([0 for i in range(attr.shape[0])])
+            x = np.array([0] * attr.shape[0])
             for i in important_attributes_idx:
                 x = x + attr[:, i]
             return x
 
         label = attributes[idxs]
-        sig = jj(label) >= 1
+        sig = count_indicators(label) >= restricted_degree
         label = label[sig]
         data = data[sig]
 
@@ -128,6 +131,19 @@ def load_celeba(data_dir):
 
     train_data, train_label = get_label(train_data, train_idxs)
     test_data, test_label = get_label(test_data, test_idxs)
+
+    if print_ratio:
+        print('\nCelebA restricted degree: {}'.format(restricted_degree))
+        train_ratio = sum(train_label[:, 1]) / train_label.shape[0]
+        test_ratio = sum(test_label[:, 1]) / test_label.shape[0]
+        print('Training set - Male: {:.2f}% ({}/{}), Not male: {:.2f}%'.format(train_ratio * 100,
+                                                                               sum(train_label[:, 1]),
+                                                                               train_label.shape[0],
+                                                                               100 - train_ratio * 100))
+        print('Testing set - Male: {:.2f}% ({}/{}), Not male: {:.2f}%'.format(test_ratio * 100,
+                                                                              sum(test_label[:, 1]),
+                                                                              test_label.shape[0],
+                                                                              100 - test_ratio * 100))
 
     return train_data, train_label, test_data, test_label
 

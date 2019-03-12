@@ -57,6 +57,9 @@ parser.add_argument('--viz_steps', type=int, default=3)
 parser.add_argument('--viz_classes', nargs='*', type=int)
 parser.add_argument('--viz_dimension', type=int, default=None)
 parser.add_argument('--viz_dir', type=str, default='./')
+
+# CelebA dataset arguments
+parser.add_argument('--celeba_restricted', type=int, default=0)
 args = parser.parse_args()
 
 # enforce arg invariants
@@ -100,8 +103,7 @@ elif args.dataset == 'fmnist':
     class_num = 10
 elif args.dataset == 'celeba':
     train_data, train_labels, test_data, test_labels = data.load_celeba(
-        './data/celeba/'
-    )
+        './data/celeba/', restricted_degree=args.celeba_restricted, print_ratio=True)
     class_num = 2
 
 train_data_shape = (args.batch_size, ) + train_data.shape[1:]
