@@ -42,6 +42,7 @@ parser.add_argument('--update_samples', type=int, default=20)
 parser.add_argument('--beta', type=float, default=1.)
 parser.add_argument('--gamma', type=float, default=10.)
 parser.add_argument('--delta', type=float, default=1.)
+parser.add_argument('--psi', type=float, default=1.)
 
 parser.add_argument('--output_dir', type=str, default='./')
 parser.add_argument('--load', action='store_true')
@@ -59,8 +60,12 @@ parser.add_argument('--viz_dimension', type=int, default=None)
 parser.add_argument('--viz_dir', type=str, default='./')
 
 # CelebA dataset arguments
-parser.add_argument('--celeba_restricted', type=int, default=0)
+parser.add_argument('--celeba_restricted', type=int, default=None)
+# parser.add_argument('--celeba_label', type=str, default=None, choices=['gender', 'subattr'])
+
 args = parser.parse_args()
+if args.dataset == 'celeba' and args.celeba_restricted is None:
+    parser.error('Need to designate restricted degree for CelebA. --celeba_restricted [DEG]')
 
 # enforce arg invariants
 # if args.viz_task == '2leaf':
@@ -103,19 +108,24 @@ elif args.dataset == 'fmnist':
     class_num = 10
 elif args.dataset == 'celeba':
     train_data, train_labels, test_data, test_labels = data.load_celeba(
-        './data/celeba/', restricted_degree=args.celeba_restricted, print_ratio=True)
+        './data/celeba/', restricted_degree=args.celeba_restricted, print_ratio=True, label_type='gender')
     class_num = 2
+
+    _, train_latent_labels, _, test_latent_labels = data.load_celeba(
+        './data/celeba/', restricted_degree=args.celeba_restricted, print_ratio=True, label_type='subattr')
 
 train_data_shape = (args.batch_size, ) + train_data.shape[1:]
 test_data_shape = (args.batch_size, ) + test_data.shape[1:]
 train_label_shape = (args.batch_size, ) + train_labels.shape[1:]
 test_label_shape = (args.batch_size, ) + test_labels.shape[1:]
+train_latent_label_shape = (args.batch_size, ) + train_latent_labels.shape[1:]
+test_latent_label_shape = (args.batch_size, ) + test_latent_labels.shape[1:]
 
 train_batches_per_epoch = train_data.shape[0] // args.batch_size
 test_batches_per_epoch = test_data.shape[0] // args.batch_size
-train_gen = data.parallel_data_generator([train_data, train_labels],
+train_gen = data.parallel_data_generator([train_data, train_labels, train_latent_labels],
                                          args.batch_size)
-test_gen = data.parallel_data_generator([test_data, test_labels],
+test_gen = data.parallel_data_generator([test_data, test_labels, test_latent_labels],
                                         args.batch_size)
 
 # build the model
@@ -187,7 +197,7 @@ elif args.dataset == 'celeba':
         snt.Linear(100)
     ])
     decoder_module = snt.Sequential([
-                                        lambda x: tf.reshape(x, [-1, 1, 1, args.latent_dimension]),
+                                        lambda x: tf.reshape(x, [-1, 1, 1, args.latent_dimension+14]),
                                         snt.Conv2D(32, 3),
                                         snt.Residual(snt.Conv2D(32, 3)),
                                         snt.Residual(snt.Conv2D(32, 3))
@@ -205,6 +215,7 @@ def train_feed_dict_fn():
     arrays = next(train_gen)
     feed_dict[data_ph] = arrays[0]
     feed_dict[label_ph] = arrays[1]
+    feed_dict[latent_label_ph] = arrays[2]
     return feed_dict
 
 
@@ -244,6 +255,7 @@ model = cpvae.CPVAE(
     beta=args.beta,
     gamma=args.gamma,
     delta=args.delta,
+    psi=args.psi,
     output_dist_fn=output_distribution_fn)
 
 # build model
@@ -255,7 +267,12 @@ label_ph = tf.placeholder(
     tf.float32,
     shape=(args.batch_size, ) + train_label_shape[1:],
     name='label_ph')
-objective = model(data_ph, label_ph, analytic_kl=True)
+latent_label_ph = tf.placeholder(
+    tf.float32,
+    shape=(args.batch_size, ) + train_latent_label_shape[1:],
+    name='latent_label_ph'
+)
+objective = model(data_ph, label_ph, latent_label_ph, analytic_kl=True)
 cluster_prob_ph = tf.placeholder(tf.float32, name='cluster_prob_ph')
 sample = model.sample(args.batch_size, cluster_prob_ph)
 
@@ -271,6 +288,7 @@ verbose_ops_dict['elbo'] = model.elbo
 verbose_ops_dict['iw_elbo'] = model.importance_weighted_elbo
 verbose_ops_dict['posterior_logp'] = model.posterior_logp
 verbose_ops_dict['classification_loss'] = model.classification_loss
+verbose_ops_dict['latent_var_loss'] = model.latent_var_loss
 
 
 def classification_rate(session, feed_dict_fn, batches):

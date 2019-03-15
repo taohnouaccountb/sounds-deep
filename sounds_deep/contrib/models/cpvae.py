@@ -50,8 +50,10 @@ class CPVAE(snt.AbstractModule):
                  beta,
                  gamma,
                  delta,
+                 psi,
                  output_dist_fn=vae.BERNOULLI_FN,
-                 name='vae'):
+                 name='vae',
+                 latent_var_num=14):
         """
         Args:
             latent_dimension (int): Dimension of the latent variable.
@@ -63,6 +65,9 @@ class CPVAE(snt.AbstractModule):
             output_dist_fn (Tensor -> tfd.Distribution): Callable from loc to a tfd distribution.
         """
         super(CPVAE, self).__init__(name=name)
+        latent_dimension += latent_var_num
+        self.latent_var_num = latent_var_num
+
         self._latent_dimension = latent_dimension
         self._box_num = box_num
         self._class_num = class_num
@@ -73,6 +78,7 @@ class CPVAE(snt.AbstractModule):
         self.beta = beta
         self.gamma = gamma
         self.delta = delta
+        self.psi = psi
 
         with self._enter_variable_scope():
             self._loc = snt.Linear(latent_dimension)
@@ -98,7 +104,7 @@ class CPVAE(snt.AbstractModule):
                 trainable=False)
             self._inference = ddt.TransductiveBoxInference()
 
-    def _build(self, data, labels, n_samples=1, analytic_kl=True):
+    def _build(self, data, labels, latent_labels, n_samples=1, analytic_kl=True):
         """Builds VAE (or IWAE depending on arguments).
 
         Args:
@@ -113,6 +119,9 @@ class CPVAE(snt.AbstractModule):
         """
         x = data
         encoder_repr = self._encoder(x)
+
+        latent_logits = encoder_repr[:, -self.latent_var_num:]
+
         loc = self._loc(encoder_repr)
         self.z_mu = loc
         scale = self._scale(encoder_repr)
@@ -140,6 +149,10 @@ class CPVAE(snt.AbstractModule):
 
         drift_loss = tf.norm(self.z_mu, ord=2, axis=1)
 
+        latent_var_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=latent_labels, logits=latent_logits)
+        latent_var_loss = tf.reduce_mean(latent_var_loss, axis=1)
+
+        self.latent_var_loss = latent_var_loss
         self.classification_loss = classification_loss
         self.distortion = distortion
         self.rate = rate
@@ -150,7 +163,7 @@ class CPVAE(snt.AbstractModule):
             tf.reduce_logsumexp(elbo_local, axis=0) -
             tf.log(tf.to_float(n_samples)))
 
-        objective = -self.elbo + self.gamma * classification_loss + self.delta * drift_loss
+        objective = -self.elbo + self.gamma * classification_loss + self.delta * drift_loss + self.psi * latent_var_loss
 
         return objective
 

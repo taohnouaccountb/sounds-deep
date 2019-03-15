@@ -92,7 +92,7 @@ def load_cifar10(data_dir):
 #     # train_idxs, val_idxs, test_idxs, attribute_names, attributes
 #     return idxable, idxable.train_idxs, idxable.test_idxs, idxable.attributes
 
-def load_celeba(data_dir, restricted_degree=0, print_ratio=False):
+def load_celeba(data_dir, restricted_degree, label_type, print_ratio=False):
     """Returns CelebA as (train_data, train_labels, test_data, test_labels)
 
         Shapes are (162770, 64, 64, 3), (162770, 2), (19962, 64, 64, 3), (19962, 10)
@@ -125,8 +125,14 @@ def load_celeba(data_dir, restricted_degree=0, print_ratio=False):
         label = label[sig]
         data = data[sig]
 
-        label = label[:, 20].reshape([-1, 1])
-        label = np.append(label, 1 - label, 1)
+        if label_type == 'gender':
+            label = 1-label[:, 20].reshape([-1, 1])
+            label = np.append(label, 1 - label, 1)
+        elif label_type == 'subattr':
+            # decission_tree_attr_idx = [1, 6, 34, 35, 36]
+            decission_tree_attr_idx = [0, 1, 6, 7, 8, 9, 12, 18, 19, 24, 34, 36, 38, 39]
+            sub_attributes_idx = np.array(decission_tree_attr_idx)
+            label = label[:, sub_attributes_idx]
         return data, label
 
     train_data, train_label = get_label(train_data, train_idxs)
