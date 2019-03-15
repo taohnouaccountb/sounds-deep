@@ -32,7 +32,7 @@ parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--latent_dimension', type=int, default=50)
 parser.add_argument('--epochs', type=int, default=600)
 parser.add_argument('--learning_rate', type=float, default=3e-5)
-parser.add_argument('--dataset', type=str, default='mnist')
+parser.add_argument('--dataset', type=str, default='celeba')
 
 parser.add_argument('--max_leaf_nodes', type=int, default=20)
 parser.add_argument('--max_depth', type=int, default=10)
@@ -40,7 +40,7 @@ parser.add_argument('--update_period', type=int, default=3)
 parser.add_argument('--update_samples', type=int, default=20)
 
 parser.add_argument('--beta', type=float, default=1.)
-parser.add_argument('--gamma', type=float, default=10.)
+parser.add_argument('--gamma', type=float, default=1000.)
 parser.add_argument('--delta', type=float, default=1.)
 
 parser.add_argument('--output_dir', type=str, default='./')
