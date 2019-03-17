@@ -66,7 +66,6 @@ class CPVAE(snt.AbstractModule):
             output_dist_fn (Tensor -> tfd.Distribution): Callable from loc to a tfd distribution.
         """
         super(CPVAE, self).__init__(name=name)
-        latent_dimension += latent_var_num
         self.latent_var_num = latent_var_num
 
         self._latent_dimension = latent_dimension
@@ -118,6 +117,7 @@ class CPVAE(snt.AbstractModule):
         Returns:
             Tensor: result of encoding, sampling, and decoding inputs in [0,1]
         """
+        self._latent_labels = latent_labels
         x = data
         encoder_repr = self._encoder(x)
 
@@ -130,13 +130,17 @@ class CPVAE(snt.AbstractModule):
         self.latent_posterior = tfd.MultivariateNormalDiag(loc, scale)
         latent_posterior_sample = self.latent_posterior.sample(n_samples)
         self.latent_posterior_sample = latent_posterior_sample
+        z_sample = tf.squeeze(latent_posterior_sample, [0])
+        z_extra = latent_labels
+        z = tf.concat([z_sample, z_extra], axis=1)
+        z = tf.expand_dims(z, 0)
         sample_decoder = snt.BatchApply(self._decoder)
-        output = sample_decoder(latent_posterior_sample)
+        output = sample_decoder(z)
         self.output_distribution = tfd.Independent(
             self._output_dist_fn(output), reinterpreted_batch_ndims=3)
 
         distortion = -self.output_distribution.log_prob(x)
-        mean_adjustment = tf.matmul(labels, self.class_locs, a_is_sparse=True)
+        mean_adjustment = tf.matmul(labels, self.class_locs, a_is_sparse=False)
         # scale_adjustment = tf.matmul(labels, self.class_scales, a_is_sparse=True)
         rate = self.beta * std_gaussian_KL_divergence(loc - mean_adjustment,
                                                       scale)

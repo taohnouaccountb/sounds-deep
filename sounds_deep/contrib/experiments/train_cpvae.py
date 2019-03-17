@@ -40,9 +40,9 @@ parser.add_argument('--update_period', type=int, default=3)
 parser.add_argument('--update_samples', type=int, default=20)
 
 parser.add_argument('--beta', type=float, default=1.)
-parser.add_argument('--gamma', type=float, default=1000.)
+parser.add_argument('--gamma', type=float, default=0.)
 parser.add_argument('--delta', type=float, default=1.)
-parser.add_argument('--psi', type=float, default=1.)
+parser.add_argument('--psi', type=float, default=1000.)
 
 parser.add_argument('--output_dir', type=str, default='./')
 parser.add_argument('--load', action='store_true')
@@ -194,7 +194,7 @@ elif args.dataset == 'celeba':
         snt.Residual(snt.Conv2D(256, 3)),
         snt.Residual(snt.Conv2D(256, 3)), scaling.squeeze2d,
         tf.keras.layers.Flatten(),
-        snt.Linear(100)
+        snt.Linear(100+14)
     ])
     decoder_module = snt.Sequential([
                                         lambda x: tf.reshape(x, [-1, 1, 1, args.latent_dimension+14]),
@@ -224,6 +224,7 @@ def test_feed_dict_fn():
     arrays = next(test_gen)
     feed_dict[data_ph] = arrays[0]
     feed_dict[label_ph] = arrays[1]
+    feed_dict[latent_label_ph] = arrays[2]
     return feed_dict
 
 
