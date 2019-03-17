@@ -8,6 +8,7 @@ import sounds_deep.contrib.models.vae as vae
 import sounds_deep.contrib.ops.ddt as ddt
 from sklearn import tree
 
+from tqdm import tqdm
 tfd = tf.contrib.distributions
 tfb = tfd.bijectors
 
@@ -223,7 +224,8 @@ class CPVAE(snt.AbstractModule):
         labels = []
         mu = []
         sigma = []
-        for _ in range(batch_num):
+        print('Updating decision tree ...')
+        for _ in tqdm(range(batch_num)):
             c, m, s, l = session.run([
                 self.latent_posterior_sample, self.z_mu, self.z_sigma,
                 label_tensor
