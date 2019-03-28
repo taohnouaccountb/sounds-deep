@@ -194,10 +194,10 @@ elif args.dataset == 'celeba':
         snt.Residual(snt.Conv2D(256, 3)),
         snt.Residual(snt.Conv2D(256, 3)), scaling.squeeze2d,
         tf.keras.layers.Flatten(),
-        snt.Linear(100+14)
+        snt.Linear(100+train_latent_label_shape[1])
     ])
     decoder_module = snt.Sequential([
-                                        lambda x: tf.reshape(x, [-1, 1, 1, args.latent_dimension+14]),
+                                        lambda x: tf.reshape(x, [-1, 1, 1, args.latent_dimension+train_latent_label_shape[1]]),
                                         snt.Conv2D(32, 3),
                                         snt.Residual(snt.Conv2D(32, 3)),
                                         snt.Residual(snt.Conv2D(32, 3))
@@ -253,6 +253,7 @@ model = cpvae.CPVAE(
     decision_tree,
     encoder_module,
     decoder_module,
+    latent_var_num=train_latent_label_shape[1],
     beta=args.beta,
     gamma=args.gamma,
     delta=args.delta,

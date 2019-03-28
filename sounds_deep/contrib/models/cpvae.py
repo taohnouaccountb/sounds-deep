@@ -52,9 +52,9 @@ class CPVAE(snt.AbstractModule):
                  gamma,
                  delta,
                  psi,
+                 latent_var_num,
                  output_dist_fn=vae.BERNOULLI_FN,
-                 name='vae',
-                 latent_var_num=14):
+                 name='vae'):
         """
         Args:
             latent_dimension (int): Dimension of the latent variable.
