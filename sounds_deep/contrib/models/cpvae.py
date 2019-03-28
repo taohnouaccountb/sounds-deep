@@ -311,5 +311,7 @@ class CPVAE(snt.AbstractModule):
             loc = tf.matmul(cluster_ids, self.class_locs, a_is_sparse=True)
             scale = tf.matmul(cluster_ids, self.class_scales, a_is_sparse=True)
             latent_code = epsilon * scale + loc
+        latent_labels = tf.random_normal([batch_size, self.latent_var_num])
+        latent_code = tf.concat([latent_code, latent_labels], 1)
         output = self._decoder(latent_code)
         return self._output_dist_fn(output).mean()
