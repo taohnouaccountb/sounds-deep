@@ -130,7 +130,8 @@ def load_celeba(data_dir, restricted_degree, label_type, print_ratio=False):
             label = np.append(label, 1 - label, 1)
         elif label_type == 'subattr':
             # decission_tree_attr_idx = [1, 6, 34, 35, 36]
-            decission_tree_attr_idx = [0, 1, 6, 7, 8, 9, 12, 18, 19, male_attr_idx, 24, 34, 36, 38, 39]
+            # decission_tree_attr_idx = [0, 1, 6, 7, 8, 9, 12, 18, 19, male_attr_idx, 24, 34, 36, 38, 39]
+            decission_tree_attr_idx = [i for i in range(label.shape[1])]
             sub_attributes_idx = np.array(decission_tree_attr_idx)
             label = label[:, sub_attributes_idx]
         return data, label
