@@ -122,6 +122,7 @@ class CPVAE(snt.AbstractModule):
         encoder_repr = self._encoder(x)
 
         latent_logits = encoder_repr[:, -self.latent_var_num:]
+        self.latent_logits = latent_logits
 
         loc = self._loc(encoder_repr)
         self.z_mu = loc
@@ -136,6 +137,7 @@ class CPVAE(snt.AbstractModule):
         z = tf.expand_dims(z, 0)
         sample_decoder = snt.BatchApply(self._decoder)
         output = sample_decoder(z)
+        self.output = output
         self.output_distribution = tfd.Independent(
             self._output_dist_fn(output), reinterpreted_batch_ndims=3)
 

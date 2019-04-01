@@ -325,6 +325,16 @@ with tf.Session(config=config) as session:
                 model._decision_tree = pickle.load(dt_file)
         saver.restore(session, os.path.join(args.output_dir, 'model_params'))
         base_epoch_val = session.run(base_epoch)
+        tf.saved_model.simple_save(
+            session,
+            os.path.join(args.output_dir, 'saved_model/'),
+            inputs={'x': data_ph, 'x_latent': latent_label_ph},
+            outputs={'latent_labels': model.latent_logits,
+                     'latent_var': model.latent_posterior_sample,
+                     'output': model.output
+                     }
+        )
+        print('OK')
 
     if args.task == 'train':
 
