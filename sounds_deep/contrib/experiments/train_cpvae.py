@@ -105,7 +105,8 @@ elif args.dataset == 'fmnist':
 elif args.dataset == 'celeba':
     accu_rank = [4, 17, 22, 14, 35, 26, 16, 30, 13, 10, 24, 15, 0, 38, 29, 20, 36, 28, 18, 12, 9, 37, 31, 23, 19, 5, 3, 7, 39, 11,
      34, 1, 32, 21, 2, 8, 33, 25, 27, 6]
-    target_attr_idx = accu_rank[args.target_attr_it]
+    skew_rank = [24, 39, 2, 21, 31, 36, 19, 20, 18, 33, 25, 27, 1, 6, 8, 7, 32, 3, 11, 34, 5, 9, 12, 37, 23, 0, 28, 38, 29, 15, 16, 13, 30, 10, 35, 14, 26, 17, 22, 4]
+    target_attr_idx = skew_rank[args.target_attr_it]
     train_data, train_labels, test_data, test_labels = data.load_celeba(
         './data/celeba/', y_c_idx=target_attr_idx, restricted_degree=args.celeba_restricted, print_ratio=True)
     class_num = 2
