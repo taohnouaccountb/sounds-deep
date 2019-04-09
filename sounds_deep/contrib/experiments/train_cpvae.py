@@ -60,6 +60,7 @@ parser.add_argument('--viz_dir', type=str, default='./')
 
 # CelebA dataset arguments
 parser.add_argument('--celeba_restricted', type=int, default=0)
+parser.add_argument('--target_attr_it', type=int)
 args = parser.parse_args()
 
 # enforce arg invariants
@@ -102,8 +103,11 @@ elif args.dataset == 'fmnist':
     test_data = np.reshape(test_data, [-1, 28, 28, 1])
     class_num = 10
 elif args.dataset == 'celeba':
+    accu_rank = [4, 17, 22, 14, 35, 26, 16, 30, 13, 10, 24, 15, 0, 38, 29, 20, 36, 28, 18, 12, 9, 37, 31, 23, 19, 5, 3, 7, 39, 11,
+     34, 1, 32, 21, 2, 8, 33, 25, 27, 6]
+    target_attr_idx = accu_rank[args.target_attr_it]
     train_data, train_labels, test_data, test_labels = data.load_celeba(
-        './data/celeba/', restricted_degree=args.celeba_restricted, print_ratio=True)
+        './data/celeba/', y_c_idx=target_attr_idx, restricted_degree=args.celeba_restricted, print_ratio=True)
     class_num = 2
 
 train_data_shape = (args.batch_size, ) + train_data.shape[1:]

@@ -92,7 +92,7 @@ def load_cifar10(data_dir):
 #     # train_idxs, val_idxs, test_idxs, attribute_names, attributes
 #     return idxable, idxable.train_idxs, idxable.test_idxs, idxable.attributes
 
-def load_celeba(data_dir, restricted_degree=0, print_ratio=False):
+def load_celeba(data_dir, y_c_idx, restricted_degree=0, print_ratio=False):
     """Returns CelebA as (train_data, train_labels, test_data, test_labels)
 
         Shapes are (162770, 64, 64, 3), (162770, 2), (19962, 64, 64, 3), (19962, 10)
@@ -110,7 +110,6 @@ def load_celeba(data_dir, restricted_degree=0, print_ratio=False):
     test_idxs = info_pak['test_idxs']
     attribute_names = info_pak['attribute_names']
     attributes = info_pak['attributes']
-    male_attr_idx = 20
 
     def get_label(data, idxs):
         def count_indicators(attr):
@@ -125,7 +124,7 @@ def load_celeba(data_dir, restricted_degree=0, print_ratio=False):
         label = label[sig]
         data = data[sig]
 
-        label = label[:, 20].reshape([-1, 1])
+        label = label[:, y_c_idx].reshape([-1, 1])
         label = np.append(label, 1 - label, 1)
         return data, label
 
