@@ -5,6 +5,7 @@ from __future__ import print_function
 import os
 import argparse
 import operator
+import shutil
 from functools import reduce
 import json
 import pickle
@@ -310,6 +311,21 @@ with tf.Session(config=config) as session:
                 model._decision_tree = pickle.load(dt_file)
         saver.restore(session, os.path.join(args.output_dir, 'model_params'))
         base_epoch_val = session.run(base_epoch)
+        try:
+            shutil.rmtree(os.path.join(args.output_dir, 'saved_model'))
+        except OSError:
+            pass
+        tf.saved_model.simple_save(
+            session,
+            os.path.join(args.output_dir, 'saved_model'),
+            inputs={'x': data_ph},
+            outputs={'latent_var': model.latent_posterior_sample,
+                     'output': model.output
+                     }
+        )
+        shutil.copyfile(os.path.join(args.output_dir, 'decision_tree.pkl'),
+                        os.path.join(args.output_dir, 'saved_model', 'decision_tree.pkl'))
+        print('Export Success')
 
     if args.task == 'train':
 

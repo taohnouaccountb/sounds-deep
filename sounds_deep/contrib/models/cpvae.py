@@ -123,11 +123,12 @@ class CPVAE(snt.AbstractModule):
         self.latent_posterior_sample = latent_posterior_sample
         sample_decoder = snt.BatchApply(self._decoder)
         output = sample_decoder(latent_posterior_sample)
+        self.output = output
         self.output_distribution = tfd.Independent(
             self._output_dist_fn(output), reinterpreted_batch_ndims=3)
 
         distortion = -self.output_distribution.log_prob(x)
-        mean_adjustment = tf.matmul(labels, self.class_locs, a_is_sparse=True)
+        mean_adjustment = tf.matmul(labels, self.class_locs, a_is_sparse=False)
         # scale_adjustment = tf.matmul(labels, self.class_scales, a_is_sparse=True)
         rate = self.beta * std_gaussian_KL_divergence(loc - mean_adjustment,
                                                       scale)
@@ -291,8 +292,8 @@ class CPVAE(snt.AbstractModule):
                 cluster_ids = tf.squeeze(
                     tf.multinomial(tf.ones([batch_size, self._class_num]), 1))
                 cluster_ids = tf.one_hot(cluster_ids, self._class_num)
-            loc = tf.matmul(cluster_ids, self.class_locs, a_is_sparse=True)
-            scale = tf.matmul(cluster_ids, self.class_scales, a_is_sparse=True)
+            loc = tf.matmul(cluster_ids, self.class_locs, a_is_sparse=False)
+            scale = tf.matmul(cluster_ids, self.class_scales, a_is_sparse=False)
             latent_code = epsilon * scale + loc
         output = self._decoder(latent_code)
         return self._output_dist_fn(output).mean()
